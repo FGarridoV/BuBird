@@ -1,9 +1,21 @@
 # 🐦 BuBird - Smart Birdhouse Observatory
 *Welcome to the nest 🪺!*
 
-**BuBird** is an open-source hardware/software project designed to observe the life cycle of local birds in real-time, with near-zero latency, and without invading their natural space.
+**BuBird** is an open-source hardware/software project designed to observe the life cycle of local birds in real-time, with near-zero latency, and without invading their natural space. The system combines solar energy and the efficiency of an **ESP32-CAM** with the processing power of a **Raspberry Pi**, offering live video streaming via WebRTC and an remote control Dashboard. 
 
-The system combines the energy efficiency of an **ESP32-CAM** with the processing power of a **Raspberry Pi**, offering live video streaming via WebRTC and an remote control Dashboard.
+In this repository we provide instructions and resources for everyone to implement this project. You are free to choose any bird house, however, we built this project on the (SWEDISH BIRD HOUSE)[https://www.thingiverse.com/thing:2503022] contributed by (PurchenZuPoden)[https://www.thingiverse.com/PurchenZuPoden/designs] on Thingiverse.
+
+## 🛠️ Project requirements
+
+* **Raspberry Pi**: I've used a Pi5 8Gb, But I think with a 3B+, any Pi4 or higher will work.
+* **ESP32-CAM**: I've used a clone of the AI Thinker ([buy])[https://amzn.eu/d/01GnobxX]
+* **2.4Ghz WiFi Antenna** ([buy])[ https://www.otronic.nl/nl/24ghz-wifi-antenne-met-sma-naar-ufl-ipex-connector.html]
+* **PIR sensor HC-SR501** ([buy])[https://www.otronic.nl/nl/pir-sensor-hc-sr501-bewegingssensor.html]
+* **Solar module CN3065** ([buy])[https://www.otronic.nl/nl/500ma-mini-solar-lipo-lithium-lader-modu-140567801.html]
+* **LIPO Baterry** ([buy])[https://www.otronic.nl/nl/37v-4000mah-oplaadbare-lipo-lithium-polyemer-platt.html]
+* **Solar Panel**
+
+
 
 ---
 
