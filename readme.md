@@ -1,8 +1,9 @@
 # 🐦 BuBird - Smart Birdhouse Observatory
+*Welcome to the nest 🪺!*
 
-Welcome to the nest! **BuBird** is an open-source hardware project designed to observe the life cycle of local birds in real-time, with near-zero latency, and without invading their natural space.
+**BuBird** is an open-source hardware/software project designed to observe the life cycle of local birds in real-time, with near-zero latency, and without invading their natural space.
 
-The system combines the energy efficiency of an **ESP32-CAM** with the processing power of a **Raspberry Pi**, offering live video streaming via WebRTC and an advanced remote control Dashboard.
+The system combines the energy efficiency of an **ESP32-CAM** with the processing power of a **Raspberry Pi**, offering live video streaming via WebRTC and an remote control Dashboard.
 
 ---
 
