@@ -3,10 +3,13 @@
 
 **BuBird** is an open-source hardware/software project designed to observe the life cycle of local birds in real-time, with near-zero latency, and without invading their natural space. The system combines solar energy and the efficiency of an **ESP32-CAM** with the processing power of a **Raspberry Pi**, offering live video streaming via WebRTC and an remote control Dashboard. 
 
+This project can be a great way to learn many different concepts and topics around Maker and IT culture. At the end, you will be familiar with Docker containers, Cloudflare, Networking, RTSP and UPD server, Python and PlatformIO scripting, Web deployment, 3D printing, hardware setup and more.
+
 In this repository we provide instructions and resources for everyone to implement this project. You are free to choose any bird house, however, we built this project on the [SWEDISH BIRD HOUSE](https://www.thingiverse.com/thing:2503022) contributed by [PurchenZuPoden](https://www.thingiverse.com/PurchenZuPoden/designs) on Thingiverse.
 
-## 🛠️ Project requirements
+## 🧰 Project requirements
 
+### Hardware
 * **Raspberry Pi**: I've used a Pi5 8Gb, But I think with a 3B+, any Pi4 or higher will work.
 * **ESP32-CAM**: I've used a clone of the AI Thinker [[buy]](https://amzn.eu/d/01GnobxX)
 * **2.4Ghz WiFi Antenna** [[buy]](https://www.otronic.nl/nl/24ghz-wifi-antenne-met-sma-naar-ufl-ipex-connector.html)
@@ -14,10 +17,22 @@ In this repository we provide instructions and resources for everyone to impleme
 * **Solar module CN3065** [[buy]](https://www.otronic.nl/nl/500ma-mini-solar-lipo-lithium-lader-modu-140567801.html)
 * **LIPO Baterry** [[buy]](https://www.otronic.nl/nl/37v-4000mah-oplaadbare-lipo-lithium-polyemer-platt.html)
 * **Solar Panel**
+* **Jumping wires**
+
+### Tools/materials
+* **3D Printer**: I have one Ender3 (v1)
+* **Soldering iron**
+* **PLA Filament**: I've used Red, White, and Black.
+* **Flux paste**
+* **Sanding paper**
+
+## 🛠️ System Architecture
+
+The system uses different components to visualize the inside of the bird house autonomusly. The ESP32-CAM record the inside of the house and creates a RTSP server to stream the video to always plugged Raspberry Pi. The Pi captures this streaming and disponbilizes through a web page. The ESP inside the house is solar and battery powered, so, a movement sensor (PIR) controls the camera activity to save energy. Additionally, you can store photos and videos based on some rules to see them later. Finally, the system disponibilizes a local webpage, which it can be safely exposed using CloudFlare. The following Figure summary the full hardware architecture.
 
 
 
----
+uses the ESP32-CAM to record what is happening in
 
 ## ✨ Key Features
 
