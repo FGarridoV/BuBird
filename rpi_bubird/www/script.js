@@ -101,7 +101,40 @@ let isManualMode = false;
 let isFlashOn = false;
 let isOtaOn = false;
 
+function updateLocks() {
+    const modeWrapper = document.getElementById('sw-wrapper-mode');
+    const lightWrapper = document.getElementById('sw-wrapper-light');
+    const otaWrapper = document.getElementById('sw-wrapper-ota');
+
+    if (isAdmin) {
+        modeWrapper.classList.remove('disabled');
+        // Si está en manual, habilitar los otros dos controles
+        if (isManualMode) {
+            lightWrapper.classList.remove('disabled');
+            otaWrapper.classList.remove('disabled');
+        } else {
+            lightWrapper.classList.add('disabled');
+            otaWrapper.classList.add('disabled');
+        }
+    } else {
+        modeWrapper.classList.add('disabled');
+        lightWrapper.classList.add('disabled');
+        otaWrapper.classList.add('disabled');
+    }
+}
+
 async function authenticateAdmin() {
+    if (isAdmin) {
+        // Option to logout
+        if (confirm("¿Cerrar sesión de administrador?")) {
+            isAdmin = false;
+            currentPassword = "";
+            document.getElementById('icon-admin').innerText = '🔒';
+            updateLocks();
+        }
+        return;
+    }
+
     const pwdInput = prompt("Introduce la contraseña de administrador para habilitar el control:");
     if (!pwdInput) return;
     
@@ -120,12 +153,8 @@ async function authenticateAdmin() {
             currentPassword = pwdInput;
             isAdmin = true;
             document.getElementById('icon-admin').innerText = '🔓';
-            alert("Modo administrador activado. Ahora puedes hacer click en los iconos para controlarlos.");
-            
-            // Make icons appear clickable
-            document.getElementById('icon-mode').classList.add('admin-active');
-            document.getElementById('icon-light').classList.add('admin-active');
-            document.getElementById('icon-ota').classList.add('admin-active');
+            alert("Modo administrador activado.");
+            updateLocks();
         }
     } catch (error) {
         alert("Error de conexión al servidor local API");
@@ -133,21 +162,33 @@ async function authenticateAdmin() {
     }
 }
 
-function toggleMode() {
-    if (!isAdmin) { alert("Requiere ser administrador."); return; }
-    sendCommand(isManualMode ? 'MODO:AUTO' : 'MODO:MANUAL');
+function toggleMode(e) {
+    if (!isAdmin) { 
+        e.preventDefault(); 
+        alert("Requiere ser administrador."); 
+        return; 
+    }
+    // Determinar comando: si el toggle se acaba de encender, enviamos MANUAL
+    const targetState = e.target.checked; 
+    sendCommand(targetState ? 'MODO:MANUAL' : 'MODO:AUTO');
+    // Previene que cambie inmediatamente, el log confirmará el cambio
+    e.preventDefault();
 }
 
-function toggleFlash() {
-    if (!isAdmin) { alert("Requiere ser administrador."); return; }
-    if (!isManualMode) { alert("El Flash solo se puede controlar en Modo Manual."); return; }
-    sendCommand(isFlashOn ? 'FLASH:OFF' : 'FLASH:ON');
+function toggleFlash(e) {
+    if (!isAdmin) { e.preventDefault(); return; }
+    if (!isManualMode) { e.preventDefault(); alert("El Flash solo se puede controlar en Modo Manual."); return; }
+    const targetState = e.target.checked; 
+    sendCommand(targetState ? 'FLASH:ON' : 'FLASH:OFF');
+    e.preventDefault();
 }
 
-function toggleOTA() {
-    if (!isAdmin) { alert("Requiere ser administrador."); return; }
-    if (!isManualMode) { alert("OTA solo se puede controlar en Modo Manual."); return; }
-    sendCommand(isOtaOn ? 'OTA:OFF' : 'OTA:ON');
+function toggleOTA(e) {
+    if (!isAdmin) { e.preventDefault(); return; }
+    if (!isManualMode) { e.preventDefault(); alert("OTA solo se puede controlar en Modo Manual."); return; }
+    const targetState = e.target.checked; 
+    sendCommand(targetState ? 'OTA:ON' : 'OTA:OFF');
+    e.preventDefault();
 }
 
 async function sendCommand(cmd) {
@@ -182,44 +223,48 @@ function updateStatusIcons(logText) {
         badgeText.innerText = "EN VIVO";
     }
 
-    // Reverse logs to find the most recent state
+    // Usamos reverse para encontrar el último estado
     const logsRev = logText.split('\n').reverse().join('\n');
     
     // B. Manual or Auto Mode?
-    const modeIcon = document.getElementById('icon-mode');
-    const idxAuto = logsRev.indexOf("Modo AUTOMÁTICO");
-    const idxManual = logsRev.indexOf("Modo MANUAL");
+    // En main.cpp dice: "[ESP] Changing to MANUAL MODE" o "AUTO MODE"
+    // (O textos equivalentes según lo encontrado)
+    const idxAuto = logsRev.indexOf("AUTO MODE");
+    const idxManual = logsRev.indexOf("MANUAL MODE");
     if (idxManual > -1 && (idxAuto === -1 || idxManual < idxAuto)) {
-        modeIcon.innerText = "🖐️ Manual";
         isManualMode = true;
+        document.getElementById('toggle-mode').checked = true;
     } else {
-        modeIcon.innerText = "⚙️ Auto";
         isManualMode = false;
+        document.getElementById('toggle-mode').checked = false;
     }
 
     // C. Flash On or Off?
-    const lightIcon = document.getElementById('icon-light');
-    const idxLightOn = logsRev.indexOf("[FLASH] Encendiendo");
-    const idxLightOff = logsRev.indexOf("[FLASH] Apagando");
+    // En main.cpp dice: "Turning FLASH on" y "Turning FLASH off"
+    const idxLightOn = logsRev.indexOf("Turning FLASH on");
+    const idxLightOff = logsRev.indexOf("Turning FLASH off");
     if (idxLightOn > -1 && (idxLightOff === -1 || idxLightOn < idxLightOff)) {
-        lightIcon.innerText = "💡 On";
         isFlashOn = true;
+        document.getElementById('toggle-light').checked = true;
     } else {
-        lightIcon.innerText = "💡 Off";
         isFlashOn = false;
+        document.getElementById('toggle-light').checked = false;
     }
 
     // D. OTA Server Status
-    const otaIcon = document.getElementById('icon-ota');
-    const idxOtaOn = logsRev.indexOf("[OTA] Servidor INICIADO");
-    const idxOtaOff = logsRev.indexOf("[OTA] Servidor APAGADO");
+    // En main.cpp dice: "Starting OTA Server" y "OTA Server STOPPED"
+    const idxOtaOn = logsRev.indexOf("Starting OTA Server");
+    const idxOtaOff = logsRev.indexOf("OTA Server STOPPED");
     if (idxOtaOn > -1 && (idxOtaOff === -1 || idxOtaOn < idxOtaOff)) {
-        otaIcon.innerText = "☁️ On";
         isOtaOn = true;
+        document.getElementById('toggle-ota').checked = true;
     } else {
-        otaIcon.innerText = "☁️ Off";
         isOtaOn = false;
+        document.getElementById('toggle-ota').checked = false;
     }
+
+    // Actualizar candados de los toggles según estados y autenticación
+    updateLocks();
 }
 
 // --- 7. FETCH REAL LOGS FROM THE SERVER EVERY 2 SECONDS ---

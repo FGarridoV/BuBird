@@ -69,11 +69,29 @@
                     <iframe src="http://bubird.home:8889/bird_house/" allowfullscreen></iframe>
                 </div>
 
-                <div class="status-bar">
+                <div class="status-bar" id="status-bar">
                     <div class="status-items">
-                        <span id="icon-mode" class="status-badge tooltip" onclick="toggleMode()">⚙️ Auto</span>
-                        <span id="icon-light" class="status-badge tooltip" onclick="toggleFlash()">💡 Off</span>
-                        <span id="icon-ota" class="status-badge tooltip" onclick="toggleOTA()">☁️ Off</span>
+                        <div class="status-toggle tooltip" data-tooltip="On=Manual, Off=Auto">
+                            <span>⚙️ Modo</span>
+                            <label class="switch disabled" id="sw-wrapper-mode">
+                                <input type="checkbox" id="toggle-mode" onclick="toggleMode(event)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="status-toggle tooltip" data-tooltip="Flash">
+                            <span>💡 Flash</span>
+                            <label class="switch disabled" id="sw-wrapper-light">
+                                <input type="checkbox" id="toggle-light" onclick="toggleFlash(event)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="status-toggle tooltip" data-tooltip="Servidor OTA">
+                            <span>☁️ OTA</span>
+                            <label class="switch disabled" id="sw-wrapper-ota">
+                                <input type="checkbox" id="toggle-ota" onclick="toggleOTA(event)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
                     <div class="status-actions">
                         <span id="icon-terminal" class="action-icon tooltip" data-tooltip="Logs" onclick="togglePanel('log-container')">🖥️</span>
