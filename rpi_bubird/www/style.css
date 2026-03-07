@@ -157,7 +157,7 @@ main {
 }
 input:checked + .slider { background-color: #4CAF50; }
 input:checked + .slider:before { transform: translateX(20px); }
-.switch.disabled { opacity: 0.5; pointer-events: none; }
+.disabled { opacity: 0.5; pointer-events: none; }
 
 .status-actions {
     display: flex; gap: 15px;

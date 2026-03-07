@@ -10,12 +10,12 @@
 #include <WebServer.h>
 #include <ElegantOTA.h>
 
-const char* ssid = "WIFI_SSID"; 
-const char* password = "WIFI_PASSWORD"; 
+const char* ssid = "SSID";
+const char* password = "PASSWORD";
 
 // --- UDP CONFIGURATION ---
 WiFiUDP udp;
-IPAddress udpAddress(192, 168, 1, 60); // RPi's IP address for receiving logs
+IPAddress udpAddress(192, 168, 1, 60); // IP de tu Raspberry Pi
 const int udpPort = 6666;
 
 // --- TIME CONFIGURATION (NTP) ---
@@ -49,8 +49,8 @@ RTSPServer rtspServer;
 int quality = 12; 
 
 // --- STATE MACHINE VARIABLES ---
-enum SystemMode { AUTO_MODE, MANUAL_MODE };
-SystemMode currentMode = AUTO_MODE; 
+enum SystemMode { MODE_AUTO, MODE_MANUAL };
+SystemMode currentMode = MODE_AUTO; // Starts in auto mode
 
 unsigned long firstDetection = 0; 
 unsigned long lastActivity = 0;  
@@ -58,7 +58,7 @@ bool previousMotion = false;
 
 // --- OTA SERVER ---
 WebServer server(80);
-bool otaEncendido = false;
+bool otaEnabled = false;
 
 // --- SENDING LOGS FUNCTION ---
 void remoteLog(String msg) {
@@ -87,16 +87,16 @@ void sendVideo(void* pvParameters) {
 void printCurrentTime() {
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
-    remoteLog("  -> [ESP Clock] Failed to obtain time from NTP server.");
+    remoteLog("  -> [Clock] Failed to obtain time from NTP server.");
     return;
   }
   char timeString[64];
   strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeinfo);
-  remoteLog("  -> [ESP Clock] Detection Date & Time: " + String(timeString));
+  remoteLog("  -> [Clock] Detection Date & Time: " + String(timeString));
 }
 
 // --- UDP COMMANDS LISTENER ---
-void listenForUDPCommands() {
+void listenForCommands() {
   int packetSize = udp.parsePacket();
   if (packetSize) {
     char incoming[255];
@@ -104,53 +104,53 @@ void listenForUDPCommands() {
     if (len > 0) incoming[len] = 0;
     
     String command = String(incoming);
-    command.trim(); 
+    command.trim(); // Clean invisible spaces or newlines
 
-    if (command == "MODE:MANUAL") {
-      currentMode = MANUAL_MODE;
-      remoteLog("[ESP] Changing to MANUAL MODE (PIR disabled).");
+    if (command == "MODO:MANUAL") {
+      currentMode = MODE_MANUAL;
+      remoteLog("[SYSTEM] Changing to MANUAL Mode (PIR disabled).");
     } 
-    else if (command == "MODE:AUTO") {
-      currentMode = AUTO_MODE;
-      lastActivity = millis(); // Reiniciar el temporizador
-      remoteLog("[ESP] Changing to AUTO MODE (PIR enabled).");
+    else if (command == "MODO:AUTO") {
+      currentMode = MODE_AUTO;
+      lastActivity = millis(); // Reset timer
+      remoteLog("[SYSTEM] Changing to AUTO Mode (PIR enabled).");
     }
-else if (command == "FLASH:ON" && currentMode == MANUAL_MODE) {
-      remoteLog("[ESP] Turning FLASH on...");
+    else if (command == "FLASH:ON" && currentMode == MODE_MANUAL) {
+      remoteLog("[FLASH] Turning ON gradually...");
       for(int i = 0; i <= 30; i++) { 
-        ledcWrite(FLASH_PIN, i); // <-- Ahora usamos FLASH_PIN
+        ledcWrite(FLASH_PIN, i); 
         delay(30); 
       }
     }
-    else if (command == "FLASH:OFF" && currentMode == MANUAL_MODE) {
-      remoteLog("[ESP] Turning FLASH off...");
+    else if (command == "FLASH:OFF" && currentMode == MODE_MANUAL) {
+      remoteLog("[FLASH] Turning OFF gradually...");
       for(int i = 30; i >= 0; i--) {
-        ledcWrite(FLASH_PIN, i); // <-- Ahora usamos FLASH_PIN
+        ledcWrite(FLASH_PIN, i); 
         delay(30);
       }
     }
-    else if (command == "OTA:ON" && currentMode == MANUAL_MODE) {
+    else if (command == "OTA:ON" && currentMode == MODE_MANUAL) {
       server.on("/", []() { server.send(200, "text/plain", "BuBird OTA Server Ready"); });
       ElegantOTA.begin(&server);
       server.begin();
-      otaEncendido = true;
-      remoteLog("[ESP] Starting OTA Server. Go to http://" + WiFi.localIP().toString() + "/update");
+      otaEnabled = true;
+      remoteLog("[OTA] Server STARTED. Go to http://" + WiFi.localIP().toString() + "/update");
     }
-    else if (command == "OTA:OFF" && otaEncendido) {
+    else if (command == "OTA:OFF" && otaEnabled) {
       server.stop();
-      otaEncendido = false;
-      remoteLog("[ESP] OTA Server STOPPED.");
+      otaEnabled = false;
+      remoteLog("[OTA] Server STOPPED.");
     }
-    else if (command == "SLEEP" && currentMode == MANUAL_MODE) {
-      remoteLog("[ESP] SLEEP command received. Going to sleep... Zzz");
+    else if (command == "REBOOT" && currentMode == MODE_MANUAL) {
+      remoteLog("[SYSTEM] REBOOT command received. Restarting...");
       delay(1000);
-      esp_deep_sleep_start();
+      ESP.restart();
     }
   }
 }
 
 void setup() {
-  // --- EXTRA SHIELD ---
+  // --- BROWNOUT DETECTOR SHIELD (CRITICAL FOR FLASH) ---
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); 
 
   Serial.begin(115200);
@@ -164,9 +164,9 @@ void setup() {
     Serial.println("PSRAM not found. Restarting...");
   }
 
-// --- CONFIGURACIÓN DEL FLASH (PWM - CORE v3.x) ---
-  ledcAttach(FLASH_PIN, 5000, 8); // Pin, Frecuencia (5kHz), Resolución (8 bits)
-  ledcWrite(FLASH_PIN, 0);        // Escribimos directamente al PIN, apagado por defecto
+// --- FLASH SETUP (PWM - CORE v3.x) ---
+  ledcAttach(FLASH_PIN, 5000, 8); // Pin, Frequency (5kHz), Resolution (8 bits)
+  ledcWrite(FLASH_PIN, 0);        // Write directly to PIN, OFF by default
 
   // Configure PIR for wake up
   pinMode(PIR_PIN, INPUT);
@@ -213,7 +213,7 @@ void setup() {
   remoteLog("[4/5] Starting RTSP Server & UDP Listener...");
   rtspServer.transport = RTSPServer::VIDEO_ONLY;
   rtspServer.init();
-  udp.begin(udpPort); 
+  udp.begin(udpPort); // Start listening for commands on port 6666
 
   remoteLog("[5/5] Starting video transmission task...");
   xTaskCreatePinnedToCore(sendVideo, "VideoTask", 1024 * 8, NULL, 1, NULL, 0); 
@@ -227,17 +227,17 @@ void setup() {
 }
 
 void loop() {
-  // 1. Listen for UDP commands
-  listenForUDPCommands();
+  // 1. Always listen for remote commands
+  listenForCommands();
 
-  // 2. If OTA is on, we need to handle the web server
-  if (otaEncendido) {
+  // 2. Process OTA Server request if enabled
+  if (otaEnabled) {
     server.handleClient();
     ElegantOTA.loop();
   }
 
-  // 3. Execution based on mode
-  if (currentMode == AUTO_MODE) {
+  // 3. Logic based on Operation Mode
+  if (currentMode == MODE_AUTO) {
     bool motionDetected = digitalRead(PIR_PIN);
 
     if (motionDetected == HIGH) {
@@ -270,13 +270,14 @@ void loop() {
       esp_deep_sleep_start(); 
     }
   }
+  // In MODE_MANUAL, the loop simply ignores PIR and keeps the camera alive.
 
-  // 4. WIFI Security Check
+  // 4. WiFi security check
   if (WiFi.status() != WL_CONNECTED) { 
     remoteLog("\n[ERROR] WiFi connection lost. Restarting to recover...");
     delay(2000);
     ESP.restart(); 
   }
 
-  vTaskDelay(pdMS_TO_TICKS(100));
+  vTaskDelay(pdMS_TO_TICKS(100)); // Short delay so commands respond quickly
 }

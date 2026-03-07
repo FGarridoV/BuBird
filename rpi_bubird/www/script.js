@@ -46,6 +46,8 @@ const translations = {
         js_req_admin: "Requiere ser administrador.",
         js_flash_manual: "El Flash solo se puede controlar en Modo Manual.",
         js_ota_manual: "OTA solo se puede controlar en Modo Manual.",
+        js_reboot_manual: "El reinicio solo está permitido en Modo Manual.",
+        js_reboot_confirm: "¿Estás seguro de que quieres reiniciar la cámara?",
         js_sys_error: "Error del Sistema: ",
         js_cmd_error: "Error de conexión al enviar el comando."
     },
@@ -78,6 +80,8 @@ const translations = {
         js_req_admin: "Requires administrator privileges.",
         js_flash_manual: "Flash can only be controlled in Manual Mode.",
         js_ota_manual: "OTA can only be controlled in Manual Mode.",
+        js_reboot_manual: "Reboot is only allowed in Manual Mode.",
+        js_reboot_confirm: "Are you sure you want to reboot the camera?",
         js_sys_error: "System Error: ",
         js_cmd_error: "Connection error sending command."
     }
@@ -125,21 +129,25 @@ function updateLocks() {
     const modeWrapper = document.getElementById('sw-wrapper-mode');
     const lightWrapper = document.getElementById('sw-wrapper-light');
     const otaWrapper = document.getElementById('sw-wrapper-ota');
+    const rebootBtn = document.getElementById('btn-reboot');
 
     if (isAdmin) {
         modeWrapper.classList.remove('disabled');
-        // Si está en manual, habilitar los otros dos controles
+        // Si está en manual, habilitar los otros controles
         if (isManualMode) {
             lightWrapper.classList.remove('disabled');
             otaWrapper.classList.remove('disabled');
+            rebootBtn.classList.remove('disabled');
         } else {
             lightWrapper.classList.add('disabled');
             otaWrapper.classList.add('disabled');
+            rebootBtn.classList.add('disabled');
         }
     } else {
         modeWrapper.classList.add('disabled');
         lightWrapper.classList.add('disabled');
         otaWrapper.classList.add('disabled');
+        rebootBtn.classList.add('disabled');
     }
 }
 
@@ -212,6 +220,14 @@ function toggleOTA(e) {
     sendCommand(targetState ? 'OTA:ON' : 'OTA:OFF');
 }
 
+function rebootSystem() {
+    if (!isAdmin) { alert(translations[currentLang].js_req_admin); return; }
+    if (!isManualMode) { alert(translations[currentLang].js_reboot_manual); return; }
+    if (confirm(translations[currentLang].js_reboot_confirm)) {
+        sendCommand('REBOOT');
+    }
+}
+
 async function sendCommand(cmd) {
     if (!currentPassword) return; 
     
@@ -245,21 +261,24 @@ function getRecentMatch(logsRev, matchStrings) {
 
 // --- 6. SMART LOG PARSER PARA ACTUALIZAR ICONOS DE ESTADO ---
 function updateStatusIcons(logText) {
+    // Usamos reverse para encontrar el último estado
+    const logsRev = logText.split('\n').reverse().join('\n');
+
     // A. Sleeping or Awake?
     const badge = document.getElementById('main-status-badge');
     const badgeText = document.getElementById('main-status-text');
-    if (logText.includes("Zzz") || logText.includes("A dormir")) {
+    
+    const idxSleep = getRecentMatch(logsRev, ["Entering Deep Sleep", "REBOOT command received"]);
+    const idxAwake = getRecentMatch(logsRev, ["Starting BuBird", "SYSTEM OK"]);
+    
+    if (idxSleep > -1 && (idxAwake === -1 || idxSleep < idxAwake)) {
         badge.classList.add('sleeping');
-        badgeText.innerText = "DURMIENDO";
+        badgeText.innerText = logsRev.includes("REBOOT") ? "RESTARTING" : "SLEEPING";
     } else {
         badge.classList.remove('sleeping');
-        // Usar label según idioma o mantener genérico, pero para EN VIVO lo dejamos así por ahora
         badgeText.innerText = document.getElementById('nav-live').innerText === 'Live Cam' ? 'LIVE' : 'EN VIVO';
     }
 
-    // Usamos reverse para encontrar el último estado
-    const logsRev = logText.split('\n').reverse().join('\n');
-    
     // B. Manual or Auto Mode?
     const idxAuto = getRecentMatch(logsRev, ["AUTO MODE", "MODO:AUTO"]);
     const idxManual = getRecentMatch(logsRev, ["MANUAL MODE", "MODO:MANUAL"]);
