@@ -226,4 +226,22 @@ footer {
     }
     .hero { padding: 2rem 1rem; }
     .hero h1 { font-size: 2rem; }
+
+    /* Adaptar status bar a pantallas pequeñas */
+    .status-bar {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    .status-items {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+    .status-actions {
+        width: 100%;
+        justify-content: space-evenly;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
 }
