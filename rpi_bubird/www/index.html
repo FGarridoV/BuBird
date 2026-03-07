@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuBird | Observatorio de Aves</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <nav>
+            <a class="logo" onclick="showSection('home')">🐦 BuBird</a>
+            
+            <div class="nav-links" id="navMenu">
+                <a onclick="showSection('home')" id="nav-home" class="active" data-i18n="nav_home">Inicio</a>
+                <a onclick="showSection('live')" id="nav-live" data-i18n="nav_live">En Vivo</a>
+                <a onclick="showSection('gallery')" id="nav-gallery" data-i18n="nav_gallery">Galería</a>
+            </div>
+
+            <div class="nav-controls">
+                <button class="lang-btn" id="lang-btn" onclick="toggleLang()">🇬🇧 EN</button>
+                <div class="hamburger" onclick="toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="section active">
+            <div class="hero">
+                <h1 data-i18n="hero_title">Bienvenidos al Nido</h1>
+                <p data-i18n="hero_desc">Un proyecto de hardware libre, código abierto y mucho cariño. Aquí observamos en tiempo real el ciclo de la vida de nuestras aves locales, sin invadir su espacio natural.</p>
+                <button class="btn" onclick="showSection('live')" data-i18n="hero_btn">Ver Cámara en Vivo 🔴</button>
+            </div>
+
+            <h2 style="text-align: center; margin-bottom: 2rem; color: var(--dark);" data-i18n="how_title">¿Cómo funciona este proyecto?</h2>
+            
+            <div class="tech-stack">
+                <div class="tech-card">
+                    <h3 data-i18n="tech_1_title">📷 Los Ojos</h3>
+                    <p data-i18n="tech_1_desc">Un ESP32-CAM programado en C++ para capturar imágenes y enviarlas a través del Wi-Fi.</p>
+                </div>
+                <div class="tech-card">
+                    <h3 data-i18n="tech_2_title">🧠 El Cerebro</h3>
+                    <p data-i18n="tech_2_desc">Una Raspberry Pi ejecutando MediaMTX y FFmpeg para procesar el video y enviarlo a la web.</p>
+                </div>
+                <div class="tech-card">
+                    <h3 data-i18n="tech_3_title">⚡ La Magia</h3>
+                    <p data-i18n="tech_3_desc">Tecnología WebRTC para lograr una latencia casi nula. ¡Lo ves al mismo tiempo que ocurre!</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="live" class="section">
+            <div class="live-container">
+                <div class="live-header">
+                    <div class="status-icons">
+                        <span id="icon-mode" class="status-badge tooltip" data-tooltip="Modo">⚙️ Auto</span>
+                        <span id="icon-light" class="status-badge tooltip" data-tooltip="Flash">💡 Off</span>
+                        <span id="icon-ota" class="status-badge tooltip" data-tooltip="OTA">☁️ Off</span>
+                    </div>
+
+                    <div class="live-badge" id="main-status-badge">
+                        <div class="dot" id="main-status-dot"></div> 
+                        <span id="main-status-text" data-i18n="live_badge">EN VIVO</span>
+                    </div>
+                </div>
+                
+                <div class="video-wrapper">
+                    <iframe src="http://bubird.home:8889/bird_house/" allowfullscreen></iframe>
+                </div>
+                <p style="margin-top: 1rem; color: var(--text-muted); text-align: center;" data-i18n="live_note">
+                    El video utiliza WebRTC para transmisión en tiempo real. Puede tardar unos segundos en cargar inicialmente.
+                </p>
+
+                <div class="panel-buttons">
+                    <button class="toggle-btn" onclick="togglePanel('settings-container', 'settings-icon')">
+                        <span>⚙️ Panel de Control</span>
+                        <span id="settings-icon">▼</span>
+                    </button>
+                    <button class="toggle-btn" onclick="togglePanel('log-container', 'log-icon')">
+                        <span data-i18n="log_btn">Terminal de Logs del Sistema</span>
+                        <span id="log-icon">▼</span>
+                    </button>
+                </div>
+
+                <div id="settings-container" class="collapsible-panel">
+                    <div class="settings-content">
+                        <div id="auth-section">
+                            <p>Introduce la contraseña de administrador:</p>
+                            <input type="password" id="admin-pwd" placeholder="Contraseña...">
+                            <button class="btn-small" onclick="checkPassword()">Desbloquear</button>
+                            <p id="auth-error" style="color: red; display: none; margin-top: 5px; font-size: 0.85rem;">Contraseña incorrecta o servidor desconectado</p>
+                        </div>
+                        
+                        <div id="control-section" style="display: none;">
+                            <div class="control-row">
+                                <span>Modo de Operación:</span>
+                                <div>
+                                    <button class="btn-cmd" onclick="sendCommand('MODO:AUTO')">Automático</button>
+                                    <button class="btn-cmd manual-btn" onclick="sendCommand('MODO:MANUAL')">Manual</button>
+                                </div>
+                            </div>
+                            <div class="control-row manual-only" style="opacity: 0.5; pointer-events: none;">
+                                <span>Control de Flash (Solo Manual):</span>
+                                <div>
+                                    <button class="btn-cmd" onclick="sendCommand('FLASH:ON')">Encender 💡</button>
+                                    <button class="btn-cmd" onclick="sendCommand('FLASH:OFF')">Apagar</button>
+                                </div>
+                            </div>
+                            <div class="control-row manual-only" style="opacity: 0.5; pointer-events: none;">
+                                <span>Servidor OTA (Solo Manual):</span>
+                                <div>
+                                    <button class="btn-cmd" onclick="sendCommand('OTA:ON')">Iniciar ☁️</button>
+                                    <button class="btn-cmd" onclick="sendCommand('OTA:OFF')">Detener</button>
+                                </div>
+                            </div>
+                            <div class="control-row manual-only" style="opacity: 0.5; pointer-events: none;">
+                                <span>Forzar Apagado:</span>
+                                <button class="btn-cmd danger-btn" onclick="sendCommand('SLEEP')">A Dormir 💤</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="log-container" class="collapsible-panel log-panel">
+                    <pre id="log-output">Conectando a BuBird System...\n</pre>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="gallery" class="section">
+            <h2 style="margin-bottom: 2rem; color: var(--dark);" data-i18n="gallery_title">La Historia del Nido</h2>
+            
+            <div class="gallery-grid">
+                <div class="gallery-card"><div class="gallery-img">🔨</div><div class="gallery-info"><h3 data-i18n="gal_1_title">Construcción de la Casa</h3><p data-i18n="gal_1_desc">Armando el hogar de madera a medida para nuestros futuros inquilinos.</p></div></div>
+                <div class="gallery-card"><div class="gallery-img">⚙️</div><div class="gallery-info"><h3 data-i18n="gal_2_title">Instalación del Sistema</h3><p data-i18n="gal_2_desc">Montando el ESP32-CAM y configurando la Raspberry Pi.</p></div></div>
+                <div class="gallery-card"><div class="gallery-img">🐦</div><div class="gallery-info"><h3 data-i18n="gal_3_title">Llegada del Pajarito</h3><p data-i18n="gal_3_desc">El primer visitante inspeccionando la nueva propiedad.</p></div></div>
+                <div class="gallery-card"><div class="gallery-img">🌿</div><div class="gallery-info"><h3 data-i18n="gal_4_title">Construcción del Nido</h3><p data-i18n="gal_4_desc">Acomodando ramitas, plumas y hojas con mucha dedicación.</p></div></div>
+                <div class="gallery-card"><div class="gallery-img">🥚</div><div class="gallery-info"><h3 data-i18n="gal_5_title">Primeros Huevitos</h3><p data-i18n="gal_5_desc">Fecha estimada. Esperando el momento exacto del desove.</p></div></div>
+                <div class="gallery-card"><div class="gallery-img">🐣</div><div class="gallery-info"><h3 data-i18n="gal_6_title">Eclosión</h3><p data-i18n="gal_6_desc">El momento mágico en que rompen el cascarón.</p></div></div>
+                <div class="gallery-card"><div class="gallery-img">🕊️</div><div class="gallery-info"><h3 data-i18n="gal_7_title">Primer Vuelo</h3><p data-i18n="gal_7_desc">Cuando dejen el nido por primera vez para explorar el mundo.</p></div></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p><span data-i18n="footer">Desarrollado con ☕, Raspberry Pi y ESP32.</span> © 2026 BuBird</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
