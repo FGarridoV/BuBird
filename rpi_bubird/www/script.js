@@ -79,15 +79,12 @@ function toggleLang() {
 }
 
 // --- 4. SWITCHING COLLAPSIBLE PANELS ---
-function togglePanel(containerId, iconId) {
+function togglePanel(containerId) {
     const container = document.getElementById(containerId);
-    const icon = document.getElementById(iconId);
     if (container.classList.contains('open')) {
         container.classList.remove('open');
-        icon.innerText = '▼';
     } else {
         container.classList.add('open');
-        icon.innerText = '▲';
         if(containerId === 'log-container') {
             const output = document.getElementById('log-output');
             output.scrollTop = output.scrollHeight; 
@@ -97,10 +94,16 @@ function togglePanel(containerId, iconId) {
 
 // --- 5. SWITCHING PASSWORD AND COMMANDS (API TO PYTHON) ---
 let currentPassword = ""; 
+let isAdmin = false;
 
-async function checkPassword() {
-    const pwdInput = document.getElementById('admin-pwd').value;
-    const errorMsg = document.getElementById('auth-error');
+// Variables to keep track of current states
+let isManualMode = false;
+let isFlashOn = false;
+let isOtaOn = false;
+
+async function authenticateAdmin() {
+    const pwdInput = prompt("Introduce la contraseña de administrador para habilitar el control:");
+    if (!pwdInput) return;
     
     try {
         const response = await fetch('http://' + window.location.hostname + ':5000', {
@@ -111,21 +114,40 @@ async function checkPassword() {
         
         const data = await response.json();
         
-        if (data.status === "error" && data.message === "Invalid Password") {
-            errorMsg.innerText = "Invalid Password";
-            errorMsg.style.display = 'block';
+        if (data.status === "error" && data.message === "Invalid password") {
+            alert("Contraseña incorrecta");
         } else {
-
             currentPassword = pwdInput;
-            errorMsg.style.display = 'none';
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('control-section').style.display = 'block';
+            isAdmin = true;
+            document.getElementById('icon-admin').innerText = '🔓';
+            alert("Modo administrador activado. Ahora puedes hacer click en los iconos para controlarlos.");
+            
+            // Make icons appear clickable
+            document.getElementById('icon-mode').classList.add('admin-active');
+            document.getElementById('icon-light').classList.add('admin-active');
+            document.getElementById('icon-ota').classList.add('admin-active');
         }
     } catch (error) {
-        errorMsg.innerText = "Error connecting to the local API server";
-        errorMsg.style.display = 'block';
+        alert("Error de conexión al servidor local API");
         console.error("API Fetch Error:", error);
     }
+}
+
+function toggleMode() {
+    if (!isAdmin) { alert("Requiere ser administrador."); return; }
+    sendCommand(isManualMode ? 'MODO:AUTO' : 'MODO:MANUAL');
+}
+
+function toggleFlash() {
+    if (!isAdmin) { alert("Requiere ser administrador."); return; }
+    if (!isManualMode) { alert("El Flash solo se puede controlar en Modo Manual."); return; }
+    sendCommand(isFlashOn ? 'FLASH:OFF' : 'FLASH:ON');
+}
+
+function toggleOTA() {
+    if (!isAdmin) { alert("Requiere ser administrador."); return; }
+    if (!isManualMode) { alert("OTA solo se puede controlar en Modo Manual."); return; }
+    sendCommand(isOtaOn ? 'OTA:OFF' : 'OTA:ON');
 }
 
 async function sendCommand(cmd) {
@@ -140,10 +162,10 @@ async function sendCommand(cmd) {
         
         const data = await response.json();
         if (data.status === "error") {
-            alert("System Error: " + data.message);
+            alert("Error del Sistema: " + data.message);
         }
     } catch (error) {
-        alert("Connection error sending UDP command to Raspberry.");
+        alert("Error de conexión al enviar el comando.");
     }
 }
 
@@ -160,23 +182,19 @@ function updateStatusIcons(logText) {
         badgeText.innerText = "EN VIVO";
     }
 
-    // B. Manual or Auto Mode?
-    const modeIcon = document.getElementById('icon-mode');
-    const manualControls = document.querySelectorAll('.manual-only');
-    
-    // Reverse logs to find the most recent mode change first
+    // Reverse logs to find the most recent state
     const logsRev = logText.split('\n').reverse().join('\n');
     
-    // Check for "Modo AUTOMÁTICO" vs "Modo MANUAL"
+    // B. Manual or Auto Mode?
+    const modeIcon = document.getElementById('icon-mode');
     const idxAuto = logsRev.indexOf("Modo AUTOMÁTICO");
     const idxManual = logsRev.indexOf("Modo MANUAL");
-    
     if (idxManual > -1 && (idxAuto === -1 || idxManual < idxAuto)) {
         modeIcon.innerText = "🖐️ Manual";
-        manualControls.forEach(el => { el.style.opacity = '1'; el.style.pointerEvents = 'auto'; });
+        isManualMode = true;
     } else {
         modeIcon.innerText = "⚙️ Auto";
-        manualControls.forEach(el => { el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; });
+        isManualMode = false;
     }
 
     // C. Flash On or Off?
@@ -185,8 +203,10 @@ function updateStatusIcons(logText) {
     const idxLightOff = logsRev.indexOf("[FLASH] Apagando");
     if (idxLightOn > -1 && (idxLightOff === -1 || idxLightOn < idxLightOff)) {
         lightIcon.innerText = "💡 On";
+        isFlashOn = true;
     } else {
         lightIcon.innerText = "💡 Off";
+        isFlashOn = false;
     }
 
     // D. OTA Server Status
@@ -195,8 +215,10 @@ function updateStatusIcons(logText) {
     const idxOtaOff = logsRev.indexOf("[OTA] Servidor APAGADO");
     if (idxOtaOn > -1 && (idxOtaOff === -1 || idxOtaOn < idxOtaOff)) {
         otaIcon.innerText = "☁️ On";
+        isOtaOn = true;
     } else {
         otaIcon.innerText = "☁️ Off";
+        isOtaOn = false;
     }
 }
 

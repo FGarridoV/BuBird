@@ -58,13 +58,7 @@
 
         <section id="live" class="section">
             <div class="live-container">
-                <div class="live-header">
-                    <div class="status-icons">
-                        <span id="icon-mode" class="status-badge tooltip" data-tooltip="Modo">⚙️ Auto</span>
-                        <span id="icon-light" class="status-badge tooltip" data-tooltip="Flash">💡 Off</span>
-                        <span id="icon-ota" class="status-badge tooltip" data-tooltip="OTA">☁️ Off</span>
-                    </div>
-
+                <div class="live-header" style="justify-content: flex-end;">
                     <div class="live-badge" id="main-status-badge">
                         <div class="dot" id="main-status-dot"></div> 
                         <span id="main-status-text" data-i18n="live_badge">EN VIVO</span>
@@ -74,60 +68,23 @@
                 <div class="video-wrapper">
                     <iframe src="http://bubird.home:8889/bird_house/" allowfullscreen></iframe>
                 </div>
+
+                <div class="status-bar">
+                    <div class="status-items">
+                        <span id="icon-mode" class="status-badge tooltip" onclick="toggleMode()">⚙️ Auto</span>
+                        <span id="icon-light" class="status-badge tooltip" onclick="toggleFlash()">💡 Off</span>
+                        <span id="icon-ota" class="status-badge tooltip" onclick="toggleOTA()">☁️ Off</span>
+                    </div>
+                    <div class="status-actions">
+                        <span id="icon-terminal" class="action-icon tooltip" data-tooltip="Logs" onclick="togglePanel('log-container')">🖥️</span>
+                        <span id="icon-admin" class="action-icon tooltip" data-tooltip="Admin" onclick="authenticateAdmin()">🔒</span>
+                    </div>
+                </div>
+
                 <p style="margin-top: 1rem; color: var(--text-muted); text-align: center;" data-i18n="live_note">
                     El video utiliza WebRTC para transmisión en tiempo real. Puede tardar unos segundos en cargar inicialmente.
                 </p>
 
-                <div class="panel-buttons">
-                    <button class="toggle-btn" onclick="togglePanel('settings-container', 'settings-icon')">
-                        <span>⚙️ Panel de Control</span>
-                        <span id="settings-icon">▼</span>
-                    </button>
-                    <button class="toggle-btn" onclick="togglePanel('log-container', 'log-icon')">
-                        <span data-i18n="log_btn">Terminal de Logs del Sistema</span>
-                        <span id="log-icon">▼</span>
-                    </button>
-                </div>
-
-                <div id="settings-container" class="collapsible-panel">
-                    <div class="settings-content">
-                        <div id="auth-section">
-                            <p>Introduce la contraseña de administrador:</p>
-                            <input type="password" id="admin-pwd" placeholder="Contraseña...">
-                            <button class="btn-small" onclick="checkPassword()">Desbloquear</button>
-                            <p id="auth-error" style="color: red; display: none; margin-top: 5px; font-size: 0.85rem;">Contraseña incorrecta o servidor desconectado</p>
-                        </div>
-                        
-                        <div id="control-section" style="display: none;">
-                            <div class="control-row">
-                                <span>Modo de Operación:</span>
-                                <div>
-                                    <button class="btn-cmd" onclick="sendCommand('MODO:AUTO')">Automático</button>
-                                    <button class="btn-cmd manual-btn" onclick="sendCommand('MODO:MANUAL')">Manual</button>
-                                </div>
-                            </div>
-                            <div class="control-row manual-only" style="opacity: 0.5; pointer-events: none;">
-                                <span>Control de Flash (Solo Manual):</span>
-                                <div>
-                                    <button class="btn-cmd" onclick="sendCommand('FLASH:ON')">Encender 💡</button>
-                                    <button class="btn-cmd" onclick="sendCommand('FLASH:OFF')">Apagar</button>
-                                </div>
-                            </div>
-                            <div class="control-row manual-only" style="opacity: 0.5; pointer-events: none;">
-                                <span>Servidor OTA (Solo Manual):</span>
-                                <div>
-                                    <button class="btn-cmd" onclick="sendCommand('OTA:ON')">Iniciar ☁️</button>
-                                    <button class="btn-cmd" onclick="sendCommand('OTA:OFF')">Detener</button>
-                                </div>
-                            </div>
-                            <div class="control-row manual-only" style="opacity: 0.5; pointer-events: none;">
-                                <span>Forzar Apagado:</span>
-                                <button class="btn-cmd danger-btn" onclick="sendCommand('SLEEP')">A Dormir 💤</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <div id="log-container" class="collapsible-panel log-panel">
                     <pre id="log-output">Conectando a BuBird System...\n</pre>
                 </div>
