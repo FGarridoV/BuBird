@@ -1,0 +1,38 @@
+name: bubird
+services:
+
+  streamer:
+    image: bluenviron/mediamtx:latest-ffmpeg
+    container_name: bubird_streamer
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ../streamer/mediamtx.yml:/mediamtx.yml
+      - /usr/share/fonts:/usr/share/fonts:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  web:
+    image: nginx:alpine
+    container_name: bubird_web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ../www:/usr/share/nginx/html:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+
+  comms:
+    image: python:3.9-slim
+    container_name: bubird_comms
+    restart: unless-stopped
+    ports:
+      - "6666:6666/udp"
+      - "5000:5000"
+    volumes:
+      - ../www:/www
+      - ../comms:/app:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    command: python -u /app/comms_server.py
