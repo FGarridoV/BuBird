@@ -10,7 +10,7 @@ UDP_IP = "0.0.0.0"
 UDP_PORT = 6666
 HTTP_PORT = 5000
 LOG_FILE = "/www/logs.txt"
-MAX_LOG_LINES = 50
+MAX_LOG_LINES = 100
 PASSWORD = "nido"
 
 # ESP32 IP address (optional)
