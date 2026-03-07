@@ -37,7 +37,17 @@ const translations = {
         gal_5_title: "Primeros Huevitos", gal_5_desc: "Fecha estimada. Esperando el momento exacto del desove.",
         gal_6_title: "Eclosión", gal_6_desc: "El momento mágico en que rompen el cascarón.",
         gal_7_title: "Primer Vuelo", gal_7_desc: "Cuando dejen el nido por primera vez para explorar el mundo.",
-        footer: "Desarrollado con ☕, Raspberry Pi y ESP32."
+        footer: "Desarrollado con ☕, Raspberry Pi y ESP32.",
+        js_admin_prompt: "Introduce la contraseña de administrador para habilitar el control:",
+        js_admin_logout: "¿Cerrar sesión de administrador?",
+        js_pwd_error: "Contraseña incorrecta",
+        js_admin_ok: "Modo administrador activado.",
+        js_api_error: "Error de conexión al servidor local API",
+        js_req_admin: "Requiere ser administrador.",
+        js_flash_manual: "El Flash solo se puede controlar en Modo Manual.",
+        js_ota_manual: "OTA solo se puede controlar en Modo Manual.",
+        js_sys_error: "Error del Sistema: ",
+        js_cmd_error: "Error de conexión al enviar el comando."
     },
     en: {
         nav_home: "Home", nav_live: "Live Cam", nav_gallery: "Gallery",
@@ -59,7 +69,17 @@ const translations = {
         gal_5_title: "First Eggs", gal_5_desc: "Estimated date. Waiting for the exact moment of spawning.",
         gal_6_title: "Hatching", gal_6_desc: "The magical moment they break the shell.",
         gal_7_title: "First Flight", gal_7_desc: "When they leave the nest for the first time to explore the world.",
-        footer: "Developed with ☕, Raspberry Pi and ESP32."
+        footer: "Developed with ☕, Raspberry Pi and ESP32.",
+        js_admin_prompt: "Enter administrator password to enable controls:",
+        js_admin_logout: "Logout from administrator?",
+        js_pwd_error: "Invalid password",
+        js_admin_ok: "Administrator mode activated.",
+        js_api_error: "Error connecting to the local API server",
+        js_req_admin: "Requires administrator privileges.",
+        js_flash_manual: "Flash can only be controlled in Manual Mode.",
+        js_ota_manual: "OTA can only be controlled in Manual Mode.",
+        js_sys_error: "System Error: ",
+        js_cmd_error: "Connection error sending command."
     }
 };
 
@@ -126,7 +146,7 @@ function updateLocks() {
 async function authenticateAdmin() {
     if (isAdmin) {
         // Option to logout
-        if (confirm("¿Cerrar sesión de administrador?")) {
+        if (confirm(translations[currentLang].js_admin_logout)) {
             isAdmin = false;
             currentPassword = "";
             document.getElementById('icon-admin').innerText = '🔒';
@@ -135,7 +155,7 @@ async function authenticateAdmin() {
         return;
     }
 
-    const pwdInput = prompt("Introduce la contraseña de administrador para habilitar el control:");
+    const pwdInput = prompt(translations[currentLang].js_admin_prompt);
     if (!pwdInput) return;
     
     try {
@@ -148,16 +168,16 @@ async function authenticateAdmin() {
         const data = await response.json();
         
         if (data.status === "error" && data.message === "Invalid password") {
-            alert("Contraseña incorrecta");
+            alert(translations[currentLang].js_pwd_error);
         } else {
             currentPassword = pwdInput;
             isAdmin = true;
             document.getElementById('icon-admin').innerText = '🔓';
-            alert("Modo administrador activado.");
+            alert(translations[currentLang].js_admin_ok);
             updateLocks();
         }
     } catch (error) {
-        alert("Error de conexión al servidor local API");
+        alert(translations[currentLang].js_api_error);
         console.error("API Fetch Error:", error);
     }
 }
@@ -165,30 +185,31 @@ async function authenticateAdmin() {
 function toggleMode(e) {
     if (!isAdmin) { 
         e.preventDefault(); 
-        alert("Requiere ser administrador."); 
+        alert(translations[currentLang].js_req_admin); 
         return; 
     }
-    // Determinar comando: si el toggle se acaba de encender, enviamos MANUAL
     const targetState = e.target.checked; 
+    isManualMode = targetState;
+    updateLocks();
     sendCommand(targetState ? 'MODO:MANUAL' : 'MODO:AUTO');
-    // Previene que cambie inmediatamente, el log confirmará el cambio
-    e.preventDefault();
 }
 
 function toggleFlash(e) {
     if (!isAdmin) { e.preventDefault(); return; }
-    if (!isManualMode) { e.preventDefault(); alert("El Flash solo se puede controlar en Modo Manual."); return; }
+    if (!isManualMode) { e.preventDefault(); alert(translations[currentLang].js_flash_manual); return; }
     const targetState = e.target.checked; 
+    isFlashOn = targetState;
+    updateLocks();
     sendCommand(targetState ? 'FLASH:ON' : 'FLASH:OFF');
-    e.preventDefault();
 }
 
 function toggleOTA(e) {
     if (!isAdmin) { e.preventDefault(); return; }
-    if (!isManualMode) { e.preventDefault(); alert("OTA solo se puede controlar en Modo Manual."); return; }
+    if (!isManualMode) { e.preventDefault(); alert(translations[currentLang].js_ota_manual); return; }
     const targetState = e.target.checked; 
+    isOtaOn = targetState;
+    updateLocks();
     sendCommand(targetState ? 'OTA:ON' : 'OTA:OFF');
-    e.preventDefault();
 }
 
 async function sendCommand(cmd) {
@@ -203,11 +224,23 @@ async function sendCommand(cmd) {
         
         const data = await response.json();
         if (data.status === "error") {
-            alert("Error del Sistema: " + data.message);
+            alert(translations[currentLang].js_sys_error + data.message);
         }
     } catch (error) {
-        alert("Error de conexión al enviar el comando.");
+        alert(translations[currentLang].js_cmd_error);
     }
+}
+
+// Helper para encontrar el estado más reciente en los logs
+function getRecentMatch(logsRev, matchStrings) {
+    let minIdx = -1;
+    for (let str of matchStrings) {
+        let idx = logsRev.indexOf(str);
+        if (idx !== -1 && (minIdx === -1 || idx < minIdx)) {
+            minIdx = idx;
+        }
+    }
+    return minIdx;
 }
 
 // --- 6. SMART LOG PARSER PARA ACTUALIZAR ICONOS DE ESTADO ---
@@ -220,17 +253,16 @@ function updateStatusIcons(logText) {
         badgeText.innerText = "DURMIENDO";
     } else {
         badge.classList.remove('sleeping');
-        badgeText.innerText = "EN VIVO";
+        // Usar label según idioma o mantener genérico, pero para EN VIVO lo dejamos así por ahora
+        badgeText.innerText = document.getElementById('nav-live').innerText === 'Live Cam' ? 'LIVE' : 'EN VIVO';
     }
 
     // Usamos reverse para encontrar el último estado
     const logsRev = logText.split('\n').reverse().join('\n');
     
     // B. Manual or Auto Mode?
-    // En main.cpp dice: "[ESP] Changing to MANUAL MODE" o "AUTO MODE"
-    // (O textos equivalentes según lo encontrado)
-    const idxAuto = logsRev.indexOf("AUTO MODE");
-    const idxManual = logsRev.indexOf("MANUAL MODE");
+    const idxAuto = getRecentMatch(logsRev, ["AUTO MODE", "MODO:AUTO"]);
+    const idxManual = getRecentMatch(logsRev, ["MANUAL MODE", "MODO:MANUAL"]);
     if (idxManual > -1 && (idxAuto === -1 || idxManual < idxAuto)) {
         isManualMode = true;
         document.getElementById('toggle-mode').checked = true;
@@ -240,9 +272,8 @@ function updateStatusIcons(logText) {
     }
 
     // C. Flash On or Off?
-    // En main.cpp dice: "Turning FLASH on" y "Turning FLASH off"
-    const idxLightOn = logsRev.indexOf("Turning FLASH on");
-    const idxLightOff = logsRev.indexOf("Turning FLASH off");
+    const idxLightOn = getRecentMatch(logsRev, ["Turning FLASH on", "FLASH:ON"]);
+    const idxLightOff = getRecentMatch(logsRev, ["Turning FLASH off", "FLASH:OFF"]);
     if (idxLightOn > -1 && (idxLightOff === -1 || idxLightOn < idxLightOff)) {
         isFlashOn = true;
         document.getElementById('toggle-light').checked = true;
@@ -252,9 +283,8 @@ function updateStatusIcons(logText) {
     }
 
     // D. OTA Server Status
-    // En main.cpp dice: "Starting OTA Server" y "OTA Server STOPPED"
-    const idxOtaOn = logsRev.indexOf("Starting OTA Server");
-    const idxOtaOff = logsRev.indexOf("OTA Server STOPPED");
+    const idxOtaOn = getRecentMatch(logsRev, ["Starting OTA Server", "OTA:ON"]);
+    const idxOtaOff = getRecentMatch(logsRev, ["OTA Server STOPPED", "OTA:OFF"]);
     if (idxOtaOn > -1 && (idxOtaOff === -1 || idxOtaOn < idxOtaOff)) {
         isOtaOn = true;
         document.getElementById('toggle-ota').checked = true;
