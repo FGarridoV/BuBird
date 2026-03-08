@@ -199,7 +199,7 @@ function toggleMode(e) {
     const targetState = e.target.checked; 
     isManualMode = targetState;
     updateLocks();
-    sendCommand(targetState ? 'MODO:MANUAL' : 'MODO:AUTO');
+    sendCommand(targetState ? 'MODE:MANUAL' : 'MODE:AUTO');
 }
 
 function toggleFlash(e) {
@@ -280,8 +280,8 @@ function updateStatusIcons(logText) {
     }
 
     // B. Manual or Auto Mode?
-    const idxAuto = getRecentMatch(logsRev, ["AUTO MODE", "MODO:AUTO"]);
-    const idxManual = getRecentMatch(logsRev, ["MANUAL MODE", "MODO:MANUAL"]);
+    const idxAuto = getRecentMatch(logsRev, ["AUTO MODE", "MODE:AUTO"]);
+    const idxManual = getRecentMatch(logsRev, ["MANUAL MODE", "MODE:MANUAL"]);
     if (idxManual > -1 && (idxAuto === -1 || idxManual < idxAuto)) {
         isManualMode = true;
         document.getElementById('toggle-mode').checked = true;

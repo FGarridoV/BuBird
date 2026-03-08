@@ -74,7 +74,7 @@ void remoteLog(String msg) {
 // --- VIDEO TASK ---
 void sendVideo(void* pvParameters) { 
   while (true) { 
-    if(rtspServer.readyToSendFrame()) {
+    if(!otaEnabled && rtspServer.readyToSendFrame()) {
       camera_fb_t* fb = esp_camera_fb_get();
       if (fb) {
         rtspServer.sendRTSPFrame(fb->buf, fb->len, quality, fb->width, fb->height);
@@ -101,17 +101,18 @@ void listenForCommands() {
   int packetSize = udp.parsePacket();
   if (packetSize) {
     char incoming[255];
-    int len = udp.read(incoming, 255);
+    // Prevent Buffer Overflow: Read up to 254 bytes to leave room for the null terminator.
+    int len = udp.read(incoming, 254);
     if (len > 0) incoming[len] = 0;
     
     String command = String(incoming);
     command.trim(); // Clean invisible spaces or newlines
 
-    if (command == "MODO:MANUAL") {
+    if (command == "MODE:MANUAL") {
       currentMode = MODE_MANUAL;
       remoteLog("[SYSTEM] Changing to MANUAL Mode (PIR disabled).");
     } 
-    else if (command == "MODO:AUTO") {
+    else if (command == "MODE:AUTO") {
       currentMode = MODE_AUTO;
       lastActivity = millis(); // Reset timer
       remoteLog("[SYSTEM] Changing to AUTO Mode (PIR enabled).");
@@ -135,12 +136,13 @@ void listenForCommands() {
       ElegantOTA.begin(&server);
       server.begin();
       otaEnabled = true;
-      remoteLog("[OTA] Server STARTED. Go to http://" + WiFi.localIP().toString() + "/update");
+      remoteLog("[OTA] Server STARTED. Video Streaming PAUSED for safety.");
+      remoteLog("[OTA] Go to http://" + WiFi.localIP().toString() + "/update");
     }
     else if (command == "OTA:OFF" && otaEnabled) {
       server.stop();
       otaEnabled = false;
-      remoteLog("[OTA] Server STOPPED.");
+      remoteLog("[OTA] Server STOPPED. Video Streaming RESUMED.");
     }
     else if (command == "REBOOT" && currentMode == MODE_MANUAL) {
       remoteLog("[SYSTEM] REBOOT command received. Restarting...");
@@ -211,11 +213,22 @@ void setup() {
   remoteLog("  -> Camera initialized successfully!");
 
   remoteLog("[2/5] Connecting to WiFi (" + String(ssid) + ")...");
+  WiFi.mode(WIFI_STA); // Force Station mode to prevent random AP broadcasting
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) { 
+  
+  uint8_t wifiRetries = 0;
+  while (WiFi.status() != WL_CONNECTED && wifiRetries < 40) { 
     delay(500); 
     Serial.print(".");
+    wifiRetries++;
   }
+  
+  // Anti-Drain Mechanism: If WiFi is completely down, sleep and try later.
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\n[CRITICAL ERROR] WiFi failed to connect. Sleeping to save power...");
+    esp_deep_sleep_start();
+  }
+
   remoteLog("\n  -> ESP connected to WiFi succesfully!");
   remoteLog("  -> ESP IP Assigned: " + WiFi.localIP().toString());
   
