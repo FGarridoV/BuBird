@@ -25,6 +25,7 @@ const char* time_zone = "CET-1CEST,M3.5.0,M10.5.0/3";
 // --- PIR & FLASH CONFIGURATION ---
 #define PIR_PIN GPIO_NUM_13
 #define WAIT_TIME_MS 60000
+#define SLEEP_TIME_US 30ULL * 60ULL * 1000000ULL // 30 minutes in microseconds
 #define FLASH_PIN 4
 
 // --- AI-Thinker Pins ---
@@ -158,6 +159,16 @@ void setup() {
   
   remoteLog("\n\n=================================");
   remoteLog("   Starting BuBird PIR v3.0      ");
+  
+  // Imprimir razón de despertar
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER) {
+    remoteLog("   Wakeup Reason: TIMER (30 min) ");
+  } else if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
+    remoteLog("   Wakeup Reason: PIR SENSOR     ");
+  } else {
+    remoteLog("   Wakeup Reason: NORMAL REBOOT  ");
+  }
   remoteLog("=================================");
 
   if (!psramFound()) {
@@ -171,6 +182,9 @@ void setup() {
   // Configure PIR for wake up
   pinMode(PIR_PIN, INPUT);
   esp_sleep_enable_ext0_wakeup(PIR_PIN, 1); 
+
+  // Configure Timer for wake up (30 minutes)
+  esp_sleep_enable_timer_wakeup(SLEEP_TIME_US);
 
   remoteLog("[1/5] Configuring camera pins...");
   camera_config_t config;
@@ -265,7 +279,7 @@ void loop() {
       remoteLog("\n=================================");
       remoteLog("[STATS] Total presence time in nest: " + String(presenceSeconds) + " seconds.");
       remoteLog("=================================");
-      remoteLog("[SLEEP] 1 minute without motion. Entering Deep Sleep... Zzz");
+      remoteLog("[SLEEP] 1 minute without motion. Entering Deep Sleep for 30 minutes... Zzz");
       delay(1000);
       esp_deep_sleep_start(); 
     }
