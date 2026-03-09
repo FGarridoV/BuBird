@@ -134,6 +134,8 @@ void listenForCommands() {
     else if (command == "OTA:ON" && currentMode == MODE_MANUAL) {
       server.on("/", []() { server.send(200, "text/plain", "BuBird OTA Server Ready"); });
       ElegantOTA.begin(&server);
+      // Disable the watchdog timer so it doesn't kill the upload process
+      ElegantOTA.setAutoReboot(true);
       server.begin();
       otaEnabled = true;
       remoteLog("[OTA] Server STARTED. Video Streaming PAUSED for safety.");
@@ -299,8 +301,8 @@ void loop() {
   }
   // In MODE_MANUAL, the loop simply ignores PIR and keeps the camera alive.
 
-  // 4. WiFi security check
-  if (WiFi.status() != WL_CONNECTED) { 
+  // 4. WiFi security check (only reboot if NOT doing OTA to prevent interrupting upload)
+  if (WiFi.status() != WL_CONNECTED && !otaEnabled) { 
     remoteLog("\n[ERROR] WiFi connection lost. Restarting to recover...");
     delay(2000);
     ESP.restart(); 
