@@ -17,7 +17,8 @@ In this repository we provide instructions and resources for everyone to impleme
 * **Solar module CN3065** [[buy]](https://www.otronic.nl/nl/500ma-mini-solar-lipo-lithium-lader-modu-140567801.html)
 * **LIPO Baterry** [[buy]](https://www.otronic.nl/nl/37v-4000mah-oplaadbare-lipo-lithium-polyemer-platt.html)
 * **Solar Panel**
-* **Jumping wires**
+* **Wires**
+* **House pole** [[buy]](https://amzn.eu/d/03isHCS7)
 
 ### Tools/materials
 * **3D Printer**: I have one Ender3 (v1)
